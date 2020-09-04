@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "unnamed",
+  "version": "${version}",
+  "name": "Unnamed",
+  "license": "CC0-1.0",
+  "icon": "assets/unnamed/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.devtech.unnamed.Unnamed"
+    ]
+  },
+  "mixins": [
+    "unnamed.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.9.2+build.206",
+    "fabric": "*",
+    "minecraft": "1.16.2"
+  }
+}

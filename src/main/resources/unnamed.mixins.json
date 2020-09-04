@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "net.devtech.unnamed.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "FireBlockMixin_WoodAsh"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
