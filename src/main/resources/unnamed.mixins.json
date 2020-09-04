@@ -3,6 +3,7 @@
   "package": "net.devtech.unnamed.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "AbstractFurnaceBlockEntityMixin_SlowFurnaceMixin",
     "FireBlockMixin_WoodAsh"
   ],
   "client": [

@@ -1,43 +1,60 @@
 package net.devtech.unnamed.registry;
 
-import static net.devtech.arrp.json.models.JModel.model;
-import static net.devtech.arrp.json.models.JModel.textures;
-import static net.devtech.unnamed.ResourceGen.prefixPath;
+import static net.devtech.arrp.json.recipe.JIngredient.ingredient;
+import static net.devtech.arrp.json.recipe.JIngredients.ingredients;
+import static net.devtech.arrp.json.recipe.JRecipe.shapeless;
+import static net.devtech.arrp.json.recipe.JResult.item;
+import static net.devtech.arrp.json.recipe.JResult.result;
 import static net.devtech.unnamed.Unnamed.MODID;
-import static net.minecraft.util.Formatting.*;
+import static net.devtech.unnamed.Unnamed.id;
+import static net.devtech.unnamed.util.Static.static_;
+import static net.minecraft.util.Formatting.GRAY;
+import static net.minecraft.util.Formatting.ITALIC;
 
-import java.util.function.BiConsumer;
-
-import net.devtech.arrp.api.RuntimeResourcePack;
-import net.devtech.arrp.json.lang.JLang;
 import net.devtech.unnamed.ResourceGen;
-import net.devtech.unnamed.items.TooltipItem;
+import net.devtech.unnamed.base.items.TooltipItem;
+import net.devtech.unnamed.util.resource.ResourceGenerateable;
 
+import net.minecraft.item.FlintAndSteelItem;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemGroup;
+import net.minecraft.item.Items;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
 
 public interface UItems {
-	Item WOOD_ASH = register(new TooltipItem(new Item.Settings(), new TranslatableText(MODID + ".tooltip.smile").formatted(GRAY, ITALIC)), "wood_ash", (i, l) -> {
-		l.item(i, "Wood Ash");
-		l.translate(MODID+".tooltip.smile", "The dust smiles at you");
+	ResourceGenerateable.Item DEFAULT = new ResourceGenerateable.Item() {};
+	// @formatter:off
+	Item WOOD_ASH = register(DEFAULT, new TooltipItem(new Item.Settings(), new TranslatableText(MODID + ".tooltip.smile").formatted(GRAY, ITALIC)), "wood_ash", "Wood Ash");
+	Item ASH_CLAY = register(DEFAULT, "ash_clay", "Ash Clay");
+	Item FIRE_STARTER = register(DEFAULT, new FlintAndSteelItem(new Item.Settings().maxDamage(4).group(ItemGroup.TOOLS)), "fire_starter", "Fire Starter");
+	// @formatter:on
+
+	// java, can we have static blocks in interfaces?
+	// java: no, we have static blocks at home
+	// static block at home:
+	Object _STATIC_ = static_(() -> {
+		ResourceGen.registerLang("en_us", l -> l.translate(MODID + ".tooltip.smile", "The dust smiles at you"));
+		ResourceGen.registerServer(r -> {
+			r.addRecipe(id("ash_clay"),
+			            shapeless(ingredients().add(ingredient().item(WOOD_ASH)).add(ingredient().item(Items.CLAY_BALL)), item(ASH_CLAY)));
+			r.addRecipe(id("fire_starter"),
+			            shapeless(ingredients().add(ingredient().item(Items.STICK)).add(ingredient().item(Items.STICK)).add(ingredient().item(Items.STICK)), item(FIRE_STARTER)));
+			r.addRecipe(id("clay_stone_mix"), shapeless(ingredients().add(ingredient().item(ASH_CLAY)).add(ingredient().item(Items.COBBLESTONE)), item(UBlocks.CLAY_COBBLE_MIX.asItem())));
+		});
 	});
 
-	static <T extends Item> T register(T t, String id, BiConsumer<Identifier, JLang> lang) {
-		return register(t, id, (r, i) -> r.addModel(model("item/generated").textures(textures().layer0(MODID + ":item/" + id)), prefixPath(i, "item")), (r, i) -> {}, lang);
+	static Item register(ResourceGenerateable.Item generateable, String id, String en_us) {
+		return register(generateable, new Item(new Item.Settings()), id, en_us);
 	}
 
-	static <T extends Item> T register(T t, String id, String en_us) {
-		return register(t, id, (r, i) -> r.addModel(model("item/generated").textures(textures().layer0(MODID + ":item/" + id)), prefixPath(i, "item")), (r, i) -> {}, (i, l) -> l.item(i, en_us));
-	}
-
-	static <T extends Item> T register(T t, String id, BiConsumer<RuntimeResourcePack, Identifier> client,
-	                                   BiConsumer<RuntimeResourcePack, Identifier> server, BiConsumer<Identifier, JLang> lang) {
+	static <T extends Item> T register(ResourceGenerateable.Item generateable, T t, String id, String en_us) {
 		Identifier identifier = new Identifier(MODID, id);
-		ResourceGen.registerClient(r -> client.accept(r, identifier));
-		ResourceGen.registerServer(r -> server.accept(r, identifier));
-		ResourceGen.registerLang("en_us", l -> lang.accept(identifier, l));
+		generateable.init(t);
+		ResourceGen.registerClient(r -> generateable.client(r, identifier));
+		ResourceGen.registerServer(r -> generateable.server(r, identifier));
+		ResourceGen.registerLang("en_us", l -> l.item(identifier, en_us));
 		return Registry.register(Registry.ITEM, identifier, t);
 	}
 

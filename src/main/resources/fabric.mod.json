@@ -9,6 +9,9 @@
   "entrypoints": {
     "main": [
       "net.devtech.unnamed.Unnamed"
+    ],
+    "rei_plugins": [
+      "net.devtech.unnamed.compat.rei.UREI"
     ]
   },
   "mixins": [
