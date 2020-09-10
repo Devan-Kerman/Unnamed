@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "AbstractFurnaceBlockEntityMixin_SlowFurnaceMixin",
-    "FireBlockMixin_WoodAsh"
+    "FireBlockMixin_WoodAsh",
+    "access.ArrayPropertyDelegateAccess"
   ],
   "client": [
   ],

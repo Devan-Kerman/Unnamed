@@ -13,6 +13,7 @@ group = project.maven_group
 minecraft {
 }
 repositories {
+    mavenLocal()
     maven {
         url = 'https://raw.githubusercontent.com/Devan-Kerman/Devan-Repo/master/'
     }
@@ -25,15 +26,23 @@ repositories {
 }
 
 dependencies {
-    modImplementation "me.shedaniel:RoughlyEnoughItems:5.2.10"
-
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-    modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    modCompile "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
-    modImplementation group: 'net.devtech', name: 'arrp', version: '0.2.6'
+    // fabric
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    // me
+    modImplementation 'net.devtech:arrp:0.2.6'
+    modImplementation 'net.devtech:FixedFluids:1.1.1'
+    modImplementation 'net.devtech:Minecraft-Recipe-Format:1.1.2'
+    // bikeshedaniel
+    modImplementation "me.shedaniel:RoughlyEnoughItems:5.2.10"
+    // cotton
     modImplementation 'io.github.cottonmc:LibGui:3.0.0-beta.1+1.16.2-rc2'
+    modImplementation  "io.github.cottonmc:CottonResources-feature-1.16.2:1.7.3"
+
+    compileOnly "com.google.code.findbugs:jsr305:3.0.2"
 }
 
 processResources {

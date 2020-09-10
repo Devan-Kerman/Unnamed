@@ -1,6 +1,12 @@
 package net.devtech.unnamed.early.blocks;
 
-import io.github.cottonmc.cotton.gui.PropertyDelegateHolder;
+import java.util.Set;
+
+import net.devtech.fixedfluids.api.BlockParticipant;
+import net.devtech.fixedfluids.api.Participant;
+import net.devtech.fixedfluids.api.util.Transaction;
+import net.devtech.unnamed.api.EnergyType;
+import net.devtech.unnamed.base.blocks.BaseWithEntity;
 import net.devtech.unnamed.early.blocks.gui.SolidFireboxBlockGui;
 import net.devtech.unnamed.registry.UTiles;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +16,6 @@ import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.HorizontalFacingBlock;
-import net.minecraft.block.InventoryProvider;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -18,17 +23,11 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.screen.ArrayPropertyDelegate;
-import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.ScreenHandlerContext;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.Properties;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Tickable;
@@ -37,13 +36,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
 
-import net.fabricmc.fabric.api.block.entity.BlockEntityClientSerializable;
 import net.fabricmc.fabric.api.registry.FuelRegistry;
-import net.fabricmc.fabric.api.util.NbtType;
 
-public class SolidFireboxBlock extends BlockWithEntity {
+// todo comparator output
+// todo cooling down
+public class SolidFireboxBlock extends BlockWithEntity implements BlockParticipant<Integer> {
 	public SolidFireboxBlock(Settings settings) {
 		super(settings);
 		this.setDefaultState(this.getStateManager().getDefaultState().with(HorizontalFacingBlock.FACING, Direction.NORTH).with(Properties.LIT, false));
@@ -56,44 +54,64 @@ public class SolidFireboxBlock extends BlockWithEntity {
 
 	@Override
 	public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
-		// You need a Block.createScreenHandlerFactory implementation that delegates to the block entity,
-		// such as the one from BlockWithEntity
 		player.openHandledScreen(state.createScreenHandlerFactory(world, pos));
 		return ActionResult.SUCCESS;
 	}
 
-	public static class Entity extends BlockEntity implements InventoryProvider, PropertyDelegateHolder, NamedScreenHandlerFactory, Tickable, BlockEntityClientSerializable {
-		private final FuelInventory inventory = new FuelInventory();
-		/**
-		 * 0 = total burn time of current fuel
-		 * 1 = remaining burn time left of current fuel
-		 */
-		private final ArrayPropertyDelegate burnTime = new ArrayPropertyDelegate(2);
+	@Override
+	public Participant<Integer> get(BlockState state, World world, BlockPos pos, @Nullable Direction direction) {
+		return (Participant<Integer>)world.getBlockEntity(pos);
+	}
 
+	@Override
+	public boolean hasComparatorOutput(BlockState state) {
+		return true;
+	}
+
+	@Override
+	public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+		Entity entity = (Entity) world.getBlockEntity(pos);
+		if(entity == null) return 0;
+		PropertyDelegate delegate = entity.getPropertyDelegate();
+		float ratio = delegate.get(2) / (float)delegate.get(3);
+		return (int) (ratio * 15);
+	}
+
+	/**
+	 * 0 = total burn time of current fuel
+	 * 1 = remaining burn time left of current fuel
+	 * 2 = heat energy
+	 * 3 = max heat energy
+	 */
+	public static class Entity extends BaseWithEntity.Entity implements Tickable, Participant.State<Integer> {
 		public Entity() {
-			super(UTiles.SOLID_FIREBOX);
+			super(UTiles.SOLID_FIREBOX, new FuelInventory(), 4);
+			this.properties.set(3, 2000);
 		}
 
 		@Override
 		public void tick() {
 			if(this.world != null && this.world.isClient) return;
-
-			int i = this.burnTime.get(1);
+			int i = this.properties.get(1);
 			if(i <= 0) { // check inventory
 				ItemStack stack = this.inventory.getStack(0);
 				if(!stack.isEmpty()) {
 					Integer time = FuelRegistry.INSTANCE.get(stack.getItem());
 					if(time != null) {
 						stack.decrement(1);
-						this.burnTime.set(0, time);
-						this.burnTime.set(1, time);
+						this.properties.set(0, time);
+						this.properties.set(1, time);
 						this.world.setBlockState(this.getPos(),
 						                         this.getCachedState().with(Properties.LIT, true));
 						this.markDirty();
 					}
 				}
+
+				// slowly cool down
+				this.properties.set(2, Math.max(0, this.properties.get(2) - 1));
 			} else {
-				this.burnTime.set(1, i--);
+				this.properties.set(1, --i);
+				this.properties.set(2, Math.min(2000, this.properties.get(2) + 1));
 				if(i == 0) {
 					this.world.setBlockState(this.getPos(),
 					                         this.getCachedState().with(Properties.LIT, false));
@@ -102,36 +120,6 @@ public class SolidFireboxBlock extends BlockWithEntity {
 			}
 		}
 
-		@Override
-		public void fromTag(BlockState state, CompoundTag tag) {
-			super.fromTag(state, tag);
-			this.inventory.readTags(tag.getList("inventory", NbtType.COMPOUND));
-			this.burnTime.set(0, tag.getInt("burnTime"));
-			this.burnTime.set(1, tag.getInt("timeLeft"));
-		}
-
-		@Override
-		public CompoundTag toTag(CompoundTag tag) {
-			tag.put("inventory", this.inventory.getTags());
-			tag.putInt("burnTime", this.burnTime.get(0));
-			tag.putInt("timeLeft", this.burnTime.get(1));
-			return super.toTag(tag);
-		}
-
-		@Override
-		public SidedInventory getInventory(BlockState state, WorldAccess world, BlockPos pos) {
-			return this.inventory;
-		}
-
-		@Override
-		public PropertyDelegate getPropertyDelegate() {
-			return this.burnTime;
-		}
-
-		@Override
-		public Text getDisplayName() {
-			return new TranslatableText(this.getCachedState().getBlock().getTranslationKey());
-		}
 
 		@Override
 		public @Nullable ScreenHandler createMenu(int syncId, PlayerInventory inv, PlayerEntity player) {
@@ -139,13 +127,30 @@ public class SolidFireboxBlock extends BlockWithEntity {
 		}
 
 		@Override
-		public void fromClientTag(CompoundTag tag) {
-			this.fromTag(null, tag);
+		public long take(Transaction transaction, Object o, long l) {
+			if(o == EnergyType.HEAT) {
+				int heat = transaction.computeIfAbsent(this, () -> this.properties.get(2));
+				int toTake = (int) Math.min(heat, l);
+				transaction.mutate(this, i -> i - toTake);
+				return toTake;
+			}
+			return 0;
 		}
 
 		@Override
-		public CompoundTag toClientTag(CompoundTag tag) {
-			return this.toTag(tag);
+		public long add(Transaction transaction, Object o, long l) {
+			return l;
+		}
+
+		@Override
+		public Set<Class<?>> getSupportedTypes() {
+			return EnergyType.HEAT_;
+		}
+
+		@Override
+		public void onCommit(Integer integer) {
+			this.properties.set(2, integer);
+			this.markDirty();
 		}
 	}
 

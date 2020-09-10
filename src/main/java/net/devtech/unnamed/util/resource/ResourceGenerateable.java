@@ -61,7 +61,8 @@ public interface ResourceGenerateable {
 		}
 
 		default void generateBlockModel(RuntimeResourcePack pack, Identifier id) {
-			pack.addModel(model("block/cube_all").textures(textures().var("all", id.toString())), ResourceGen.prefixPath(id, "block"));
+			Identifier prefix = ResourceGen.prefixPath(id, "block");
+			pack.addModel(model("block/cube_all").textures(textures().var("all", prefix.toString())), prefix);
 		}
 
 		default void generateLootTable(RuntimeResourcePack pack, Identifier id) {
@@ -80,10 +81,10 @@ public interface ResourceGenerateable {
 		private final String top, front, side, bottom;
 
 		public Facing(String top, String front, String side, String bottom) {
-			this.top = Unnamed.MODID + ":block/" + top;
-			this.front = Unnamed.MODID + ":block/" + front;
-			this.side = Unnamed.MODID + ":block/" + side;
-			this.bottom = Unnamed.MODID + ":block/" + bottom;
+			this.top = Unnamed.ID + ":block/" + top;
+			this.front = Unnamed.ID + ":block/" + front;
+			this.side = Unnamed.ID + ":block/" + side;
+			this.bottom = Unnamed.ID + ":block/" + bottom;
 		}
 
 		public static Facing of(String top, String front, String side, String bottom) {
@@ -123,10 +124,10 @@ public interface ResourceGenerateable {
 
 		public FurnaceLike(String top, String front, String side, String bottom, String top_on, String front_on, String side_on, String bottom_on) {
 			super(top, front, side, bottom);
-			this.top_on = Unnamed.MODID + ":block/" + top_on;
-			this.front_on = Unnamed.MODID + ":block/" + front_on;
-			this.side_on = Unnamed.MODID + ":block/" + side_on;
-			this.bottom_on = Unnamed.MODID + ":block/" + bottom_on;
+			this.top_on = Unnamed.ID + ":block/" + top_on;
+			this.front_on = Unnamed.ID + ":block/" + front_on;
+			this.side_on = Unnamed.ID + ":block/" + side_on;
+			this.bottom_on = Unnamed.ID + ":block/" + bottom_on;
 		}
 
 

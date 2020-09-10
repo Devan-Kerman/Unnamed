@@ -5,7 +5,7 @@ import static net.devtech.arrp.json.recipe.JKeys.keys;
 import static net.devtech.arrp.json.recipe.JPattern.pattern;
 import static net.devtech.arrp.json.recipe.JRecipe.shaped;
 import static net.devtech.arrp.json.recipe.JResult.item;
-import static net.devtech.unnamed.Unnamed.MODID;
+import static net.devtech.unnamed.Unnamed.ID;
 import static net.devtech.unnamed.Unnamed.id;
 import static net.devtech.unnamed.util.Static.static_;
 
@@ -13,7 +13,9 @@ import net.devtech.unnamed.ResourceGen;
 import net.devtech.unnamed.base.blocks.DryingBlock;
 import net.devtech.unnamed.base.blocks.HorizontalFacingBlock;
 import net.devtech.unnamed.early.blocks.AshesBlock;
+import net.devtech.unnamed.early.blocks.GrinderBlock;
 import net.devtech.unnamed.early.blocks.SolidFireboxBlock;
+import net.devtech.unnamed.early.blocks.StirlingEngineBlock;
 import net.devtech.unnamed.util.resource.ResourceGenerateable;
 
 import net.minecraft.block.AbstractBlock;
@@ -61,6 +63,11 @@ public interface UBlocks {
 	                                           new SolidFireboxBlock(AbstractBlock.Settings.copy(Blocks.FURNACE)),
 	                                           "solid_firebox",
 	                                           "Solid Firebox");
+	StirlingEngineBlock STIRLING_ENGINE = register(new ResourceGenerateable.Facing("cold_port", "stirling_engine", "stone_port", "heat_port"),
+	                                               new StirlingEngineBlock(AbstractBlock.Settings.copy(Blocks.STONE)),
+	                                               "stirling_engine",
+	                                               "Stirling Engine");
+	GrinderBlock GRINDER_BLOCK = register(new ResourceGenerateable.Facing("grinder_top", "grinder", "stone_port", "stone_port"), new GrinderBlock(AbstractBlock.Settings.copy(Blocks.STONE)), "grinder", "Grinder");
 
 	Object _STATIC_ = static_(() -> {
 		//
@@ -75,7 +82,7 @@ public interface UBlocks {
 	});
 
 	static <T extends Block> T register(ResourceGenerateable.Block resource, T t, String id, String en_us) {
-		Identifier identifier = new Identifier(MODID, id);
+		Identifier identifier = new Identifier(ID, id);
 		resource.init(t);
 		ResourceGen.registerClient(r -> resource.client(r, identifier));
 		ResourceGen.registerServer(r -> resource.server(r, identifier));
